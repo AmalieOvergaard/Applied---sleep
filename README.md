@@ -1,2 +1,2 @@
-# Applied: sleep
+# Applied: Sleep
 Applied project, sleep-group
