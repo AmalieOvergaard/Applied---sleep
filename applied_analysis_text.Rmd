@@ -1,0 +1,108 @@
+---
+title: "applied_text_analysis"
+output: html_document
+date: "2023-03-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/villiamjensen/Documents/Cognitive Science/2. semester/Applied Cognitive Science")
+
+
+theme_mattis <- function (base_size = 11, base_family = "") {
+    theme_bw() %+replace% 
+    theme(
+      panel.grid.major  = element_line(color = "white"),
+      panel.background = element_rect(fill = "white"),
+      panel.border = element_rect(color = "#8499B1", fill = NA),
+      axis.line = element_line(color = "#646881"),
+      axis.ticks = element_line(color = "#404E4D"),
+      axis.text = element_text(color = "#404E4D")
+      )
+}
+
+theme_set(theme_mattis())
+```
+
+
+```{r cars}
+df <- read.csv("/Users/villiamjensen/Documents/Cognitive Science/2. semester/Applied Cognitive Science/Study on Sleep and Attention (svar) - Formularsvar 1.csv")
+
+df <- na.omit(df)
+
+df <- df %>% rename("hours_slept" = "Roughly..how.many.hours.did.you.sleep.last.night.")
+df <- df %>% rename("quality" = "How.would.you.rate.the.quality.of.your.last.night.s.sleep.")
+df <- df %>% rename("age" = "What.is.your.age..Please.respond.with.a.number.only",
+                    "time" = "Tidsstempel",
+                    "gender" = "What.is.your.gender.",
+                    "uni" = "Are.you.currently.a.university.student.",
+                    "fresh_time" = "At.what.time.do.your.consider.yourself.most.fresh.",
+                    "chronotype" = "What.type.would.you.consider.yourself.most.",
+                    "ladyspots" = "How.many.spots.does.the.ladybug.have.in.total.",
+                    "paris_train" = "How.fast.is.the.train.from.Paris.going.",
+                    "city_meet" = "According.to.the.Lord..in.which.city.will.the.trains.meet.",
+                    "leave_time" = "When.does.the.train.leave.Paris.",
+                    "lady_return" = "How.many.minutes.goes.by.before.the.ladybug.is.back.",
+                    "station_depart" = "Which.station.does.the.7.o.clock.train.depart.from.",
+                    "ladyfinger" = "Which.finger.did.the.ladybug.crawl.up.on.",
+                    "color_paper" = "What.is.the.colour.of.Sofie.s.paper.",
+                    "name_teacher" = "What.is.the.name.of.Sofie.s.math.teacher.",
+                    "total_carriages" = "In.total..how.many.carriages.are.there.in.total.")
+
+#removing date
+df <- df %>% mutate(time = substr(df$time, 12, 19))
+
+#run this code only once!!! // tallying correct answers
+df <- df %>% mutate("correct"= ifelse(ladyspots == 7, 1, 0))
+
+df <- df %>% mutate("correct" = ifelse(paris_train == "147 km/h", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(city_meet == "Amsterdam", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(leave_time == "6 o'clock", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(lady_return == "2", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(station_depart == "Milano", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(ladyfinger == "Index finger", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(color_paper == "Yellow", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(name_teacher == "Michael", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(total_carriages == "6", df$correct + 1, df$correct + 0))
+
+```
+
+
+```{r}
+# correlation between hours slept and amount of correct answers
+df %>% 
+  ggplot(aes(x = correct, hours_slept)) +
+  geom_jitter()
+```
+
+```{r}
+#correlation between perceived sleep quality and amount of correct answers
+
+df %>% 
+  ggplot(aes(x = correct, quality)) +
+  geom_point() +
+  labs(x = "# of Correct Answers", y = "Perceived Quality of Sleep", title = "Correlation Between Perceived Sleep Quality and # of Correct Answers")
+```
+
+```{r}
+#correlation between perceived sleep quality and hours slept (not really relevant)
+df %>% 
+  ggplot(aes(x = hours_slept, quality)) +
+  geom_point() +
+  labs(x = "Hours Slept", y = "Perceived Quality of Sleep", title = "Correlation Between Perceived Perceived Sleep Quality and Hours Slept")
+```
+
+```{r}
+
+```
+
+
+
