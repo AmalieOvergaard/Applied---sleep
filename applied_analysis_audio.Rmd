@@ -1,0 +1,197 @@
+---
+title: "applied_analysis_audio"
+output: html_document
+date: "2023-04-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/villiamjensen/Documents/Cognitive Science/2. semester/Applied Cognitive Science")
+
+theme_set(theme_bw())
+```
+
+```{r}
+df <- read.csv("/Users/villiamjensen/Documents/Cognitive Science/2. semester/Applied Cognitive Science/Auditory Study on Sleep and Attention (svar) - Formularsvar 1.csv")
+
+df <- na.omit(df)
+
+df <- df %>% rename("hours_slept" = "Roughly..how.many.hours.did.you.sleep.last.night.")
+df <- df %>% rename("quality" = "How.would.you.rate.the.quality.of.your.last.night.s.sleep.")
+df <- df %>% rename("age" = "What.is.your.age..Please.respond.with.a.number.only",
+                    "time" = "Tidsstempel",
+                    "gender" = "What.is.your.gender.",
+                    "uni" = "Are.you.currently.a.university.student.",
+                    "fresh_time" = "At.what.time.do.your.consider.yourself.most.fresh.",
+                    "chronotype" = "What.type.would.you.consider.yourself.most.",
+                    "shelf" = "What.is.supposed.to.be.on.the.shelf.",
+                    "den_build" = "Other.than.boards..blankets.and.cushions..what.are.they.using.to.build.the.den..",
+                    "boards" = "How.many.boards.do.they.use.to.build.the.den.",
+                    "wood" = "Where.does.the.wood.they.use.for.the.table.and.the.shelf.come.from.",
+                    "nails" = "How.many.nails.do.they.use.",
+                    "den" = "What.part.of.the.den.do.they.build.first.",
+                    "remove" = "What.two.things.do.Annie.remove.at.the.end.",
+                    "workhours" = "For.how.many.hours.have.Annie.and.James.been.working.",
+                    "holes" = "Where.are.the.holes.in.the.den.",
+                    "cake" = "What.does.James.bring.when.they.are.finished.building.")
+
+#removing timestamp
+df <- df %>% mutate(time = substr(df$time, 12, 19))
+
+#adding ID column
+df$ID <- seq(length.out = nrow(df))
+
+df$ID <- as.factor(df$ID)
+
+#adding hour column
+df$hour <- hour(hms(df$time))
+
+#run this code only once!!! // tallying correct answers
+df <- df %>% mutate("correct"= ifelse(shelf == "Books", 1, 0))
+
+df <- df %>% mutate("correct" = ifelse(den_build == "Nails", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(boards == "15 boards", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(wood == "From two chairs", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(nails == "36 nails", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(den == "The walls", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(remove == "The hammer and nails", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(workhours == "3 hours", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(holes == "In the roof", df$correct + 1, df$correct + 0))
+
+df <- df %>% mutate("correct" = ifelse(cake == "Lemonade and cake", df$correct + 1, df$correct + 0))
+
+```
+
+```{r}
+df <- df %>% mutate("shelf" = ifelse(shelf == "Books", 1, 0))
+
+df <- df %>% mutate("den_build" = ifelse(den_build == "Nails", 1, 0))
+
+df <- df %>% mutate("boards" = ifelse(boards == "15 boards", 1, 0))
+
+df <- df %>% mutate("wood" = ifelse(wood == "From two chairs", 1, 0))
+
+df <- df %>% mutate("nails" = ifelse(nails == "36 nails", 1, 0))
+
+df <- df %>% mutate("den" = ifelse(den == "The walls", 1, 0))
+
+df <- df %>% mutate("remove" = ifelse(remove == "The hammer and nails", 1, 0))
+
+df <- df %>% mutate("workhours" = ifelse(workhours == "3 hours", 1, 0))
+
+df <- df %>% mutate("holes" = ifelse(holes == "In the roof", 1, 0))
+
+df <- df %>% mutate("cake" = ifelse(cake == "Lemonade and cake", 1, 0))
+
+df <- df %>% mutate("correct" = shelf + den_build + boards + wood + nails + den + remove + workhours + holes + cake)
+
+```
+
+```{r}
+df <- df %>%
+  mutate(chronotype = case_when(
+    chronotype == "A-type (A-menneske; finds it easy to wake up early and to go to bed early)" ~ "A",
+    chronotype == "B-type (B-menneske; tends to wake up late and goes to bed late)" ~ "B",
+    chronotype == "I do not know" ~ "Unsure",
+    TRUE ~ chronotype
+  ))
+```
+
+
+```{r}
+plot_function <- function(data, group_var) {
+  
+  data %>%
+    group_by({{group_var}}) %>% 
+    summarize(correct_pct = sum(correct)/length(time)) %>%
+    ggplot(aes(x = {{group_var}}, y = correct_pct, fill = {{group_var}})) +
+    geom_bar(stat = "identity") +
+    scale_y_continuous(breaks = seq(1,9, by = 1)) + 
+    labs(x = deparse(substitute(group_var)), y = "Mean # of Correct Answers")
+}
+```
+
+```{r}
+df <- df %>% mutate("hour_groups" = ifelse(hours_slept < 6, 1, 0))
+
+df <- df %>% mutate("quality_groups" = ifelse(quality <= 5, 1, 0))
+
+df$quality_groups <- as.factor(df$quality_groups)
+df$hour_groups <- as.factor(df$hour_groups)
+```
+
+
+```{r}
+plot_function(df,quality_groups)
+t.test(correct ~ quality_groups, df)
+```
+```{r}
+leveneTest(df$correct, df$hour_groups, center = mean)
+
+shapiro.test(df$hours_slept)
+```
+
+
+```{r}
+plot_function(df, hour_groups) 
+
+t.test(correct ~ hour_groups, df)
+```
+
+```{r}
+df1 <- pivot_longer(df, cols = c(shelf, den_build, boards, wood, nails, den, remove, workhours, holes, cake), names_to = "question", values_to = "value")
+```
+
+```{r}
+model1 <- glmer(value ~ hours_slept + quality + (1 | ID), data = df1, family = "binomial")
+model2 <- glmer(value ~ hours_slept + (1 | ID), data = df1, family = "binomial")
+model3 <- glmer(value ~ quality + (1 | ID), data = df1, family = "binomial")
+#vif(model1)
+summary(model2)
+
+BIC(model1, model2, model3)
+
+```
+
+```{r}
+df$correct <- as.numeric(df$correct)
+
+df %>% 
+  ggplot(aes(x = hours_slept, y = correct, col = as.factor(hours_slept))) +
+  geom_jitter() +
+  scale_x_continuous(breaks = round(seq(min(df$hours_slept), max(df$hours_slept), by = 1),4)) +
+  scale_y_continuous(breaks = seq(min(df$correct), max(df$correct), by = 1), 4) +
+  scale_color_manual(values = c("red", "blue", "green", "orange", "purple", "pink", "brown", "gray", "black"))
+
+```
+
+```{r}
+df %>%
+  group_by(chronotype) %>% 
+  summarize(correct_pct = sum(correct)/length(time)) %>%
+  ggplot(aes(x = chronotype, y = correct_pct, fill = chronotype)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(breaks = seq(1,9, by = 1)) + 
+  scale_fill_discrete(name = "Chronotype") +
+  labs(x = "Chronotype", y = "Mean # of Correct Answers")
+```
+```{r}
+df %>% filter(chronotype != "Unsure") %>% 
+  ggplot(aes(x = hour, y = correct, col = chronotype)) +
+  geom_point() +
+  facet_wrap(~chronotype)
+```
+
+```{r}
+df1 %>% 
+  ggplot(aes(x = question, y = value, col = question, fill = question)) + 
+  geom_bar(stat = "identity")
+```
+
