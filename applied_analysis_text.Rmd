@@ -8,20 +8,11 @@ date: "2023-03-15"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = "/Users/villiamjensen/Documents/Cognitive Science/2. semester/Applied Cognitive Science")
 
+theme_set(theme_bw())
+```
 
-theme_mattis <- function (base_size = 11, base_family = "") {
-    theme_bw() %+replace% 
-    theme(
-      panel.grid.major  = element_line(color = "white"),
-      panel.background = element_rect(fill = "white"),
-      panel.border = element_rect(color = "#8499B1", fill = NA),
-      axis.line = element_line(color = "#646881"),
-      axis.ticks = element_line(color = "#404E4D"),
-      axis.text = element_text(color = "#404E4D")
-      )
-}
-
-theme_set(theme_mattis())
+```{r}
+install.packages("lubridate")
 ```
 
 
@@ -47,7 +38,7 @@ df <- df %>% rename("age" = "What.is.your.age..Please.respond.with.a.number.only
                     "ladyfinger" = "Which.finger.did.the.ladybug.crawl.up.on.",
                     "color_paper" = "What.is.the.colour.of.Sofie.s.paper.",
                     "name_teacher" = "What.is.the.name.of.Sofie.s.math.teacher.",
-                    "total_carriages" = "In.total..how.many.carriages.are.there.in.total.")
+                    "total_carriages" = "In.total..how.many.carriages.are.there.")
 
 #removing date
 df <- df %>% mutate(time = substr(df$time, 12, 19))
@@ -59,7 +50,7 @@ df <- df %>% mutate("correct" = ifelse(paris_train == "147 km/h", df$correct + 1
 
 df <- df %>% mutate("correct" = ifelse(city_meet == "Amsterdam", df$correct + 1, df$correct + 0))
 
-df <- df %>% mutate("correct" = ifelse(leave_time == "6 o'clock", df$correct + 1, df$correct + 0))
+df <- df %>% mutate("correct" = ifelse(df$leave_time == "`6 o’clock`", df$correct + 1, df$correct + 0))
 
 df <- df %>% mutate("correct" = ifelse(lady_return == "2", df$correct + 1, df$correct + 0))
 
@@ -73,35 +64,248 @@ df <- df %>% mutate("correct" = ifelse(name_teacher == "Michael", df$correct + 1
 
 df <- df %>% mutate("correct" = ifelse(total_carriages == "6", df$correct + 1, df$correct + 0))
 
+
+
 ```
 
+
+
+```{r}
+df <- df %>% mutate("ladyspots" = ifelse(ladyspots == 7, 1, 0))
+
+df <- df %>% mutate("paris_train" = ifelse(paris_train == "147 km/h", 1, 0))
+
+df <- df %>% mutate("city_meet" = ifelse(city_meet == "Amsterdam", 1, 0))
+
+df <- df %>% mutate("leave_time" = ifelse(leave_time == "6 o’clock", 1, 0))
+
+df <- df %>% mutate("lady_return" = ifelse(lady_return == "2", 1, 0))
+
+df <- df %>% mutate("station_depart" = ifelse(station_depart == "Milano", 1, 0))
+
+df <- df %>% mutate("ladyfinger" = ifelse(ladyfinger == "Index finger", 1, 0))
+
+df <- df %>% mutate("color_paper" = ifelse(color_paper == "Yellow", 1, 0))
+
+df <- df %>% mutate("name_teacher" = ifelse(name_teacher == "Michael", 1, 0))
+
+df <- df %>% mutate("total_carriages" = ifelse(total_carriages == "6", 1, 0))
+
+```
+
+```{r}
+df$ID <- seq(length.out = nrow(df))
+
+df$ID <- as.factor(df$ID)
+```
+
+```{r}
+df$hour <- hour(hms(df$time))
+```
+
+
+```{r}
+df <- df %>% mutate("hour_groups" = ifelse(hours_slept < 6, 1, 0))
+
+df <- df %>% mutate("quality_groups" = ifelse(quality <= 5, 1, 0))
+
+df$quality_groups <- as.factor(df$quality_groups)
+```
+
+```{r}
+plot_function(df, quality_groups)
+
+df %>% group_by(quality_groups) %>% summarize(mean(correct), length(ID))
+
+```
+
+```{r}
+df %>% group_by(hour_groups) %>% summarize(mean(correct))
+```
+
+```{r}
+df %>% group_by(chronotype) %>% summarize(mean(hours_slept), mean(correct))
+```
+
+
+```{r}
+summary(glmer(value ~ hours_slept + quality + gender + chronotype + (1 | ID), data = df1, family = "binomial"))
+```
+
+
+```{r}
+df1 <- pivot_longer(df, cols = c(ladyspots, paris_train, city_meet, leave_time, lady_return, station_depart, ladyfinger, color_paper, name_teacher, total_carriages))
+```
+
+```{r}
+model1 <- glmer(value ~ hours_slept + quality + (1 | ID), data = df1, family = "binomial")
+model2 <- glmer(value ~ hours_slept + (1 | ID), data = df1, family = "binomial")
+model3 <- glmer(value ~ quality + (1 | ID), data = df1, family = "binomial")
+#vif(model1)
+summary(model1)
+
+BIC(model1, model2, model3)
+
+```
+
+
+```{r}
+df$hour_groups <- as.factor(df$hour_groups)
+
+plot_function(df, hour_groups) + 
+  scale_x_discrete(labels = c("Low Sleep", "High Sleep")) + 
+  labs(x = "Sleep Groups", title = "Comparison of Mean Correct Answers Between Sleep Groups") + 
+  scale_fill_discrete(name = "Sleep Groups", labels = c("<6 hours of Sleep", ">= 6 hours of Sleep"))
+```
+
+```{r}
+plot_function(df, gender)
+```
+```{r}
+df %>% filter(quality > 4) %>% 
+  ggplot(aes(x = quality, y = correct)) +
+  geom_jitter() + geom_smooth(method = "lm")
+```
+```{r}
+df %>% group_by(gender) %>% summarize(length(ID))
+```
+
+```{r}
+df %>% summarize(mean(age), sd(age))
+
+df %>% 
+  ggplot(aes(x = age)) +
+  geom_bar()
+```
+```{r}
+df %>% group_by(uni) %>% summarize(length(ID))
+```
+
+
+```{r}
+plot_function <- function(data, group_var) {
+  
+  data %>%
+    group_by({{group_var}}) %>% 
+    summarize(correct_pct = sum(correct)/length(time)) %>%
+    ggplot(aes(x = {{group_var}}, y = correct_pct, fill = {{group_var}})) +
+    geom_bar(stat = "identity") +
+    scale_y_continuous(breaks = seq(1,9, by = 1)) + 
+    labs(x = deparse(substitute(group_var)), y = "Mean # of Correct Answers")
+}
+```
+
+
+```{r}
+df <- df %>%
+  mutate(chronotype = case_when(
+    chronotype == "A-type (A-menneske; finds it easy to wake up early and to go to bed early)" ~ "A",
+    chronotype == "B-type (B-menneske; tends to wake up late and goes to bed late)" ~ "B",
+    chronotype == "I do not know" ~ "Unsure",
+    TRUE ~ chronotype
+  ))
+```
 
 ```{r}
 # correlation between hours slept and amount of correct answers
 df %>% 
   ggplot(aes(x = correct, hours_slept)) +
-  geom_jitter()
+  geom_jitter() + geom_smooth(method= "lm") +
+  labs(x = "# of Correct Answers", y = "Hours Slept") +
+scale_x_continuous(breaks = round(seq(min(df$correct), max(df$correct), by = 1),4))
 ```
+
+```{r}
+df %>% summarize(mean(correct))
+```
+```{r}
+df %>% filter(chronotype != "Unsure" ) %>% 
+  ggplot(aes(x = hour, y = correct, col = chronotype)) +
+  geom_point() + geom_smooth()
+```
+
+
+```{r}
+df$hours_slept <- as.numeric(df$hours_slept)
+summary(lm(correct ~ hours_slept, df))
+```
+
+
 
 ```{r}
 #correlation between perceived sleep quality and amount of correct answers
 
 df %>% 
-  ggplot(aes(x = correct, quality)) +
-  geom_point() +
+  ggplot(aes(x = correct, y = quality)) +
+  geom_point() + geom_smooth()
   labs(x = "# of Correct Answers", y = "Perceived Quality of Sleep", title = "Correlation Between Perceived Sleep Quality and # of Correct Answers")
 ```
 
 ```{r}
+
+```
+
+
+```{r}
 #correlation between perceived sleep quality and hours slept (not really relevant)
+df$hours_slept <- as.numeric(df$hours_slept)
+
 df %>% 
   ggplot(aes(x = hours_slept, quality)) +
-  geom_point() +
+  geom_point() + geom_smooth(method = "lm")
   labs(x = "Hours Slept", y = "Perceived Quality of Sleep", title = "Correlation Between Perceived Perceived Sleep Quality and Hours Slept")
+  
+  #//////
+  summary(lm(quality ~ hours_slept, df))
+  
+  shapiro.test(df$quality)
+```
+
+
+```{r}
+#df$hours_slept <- as.factor(df$hours_slept)
 ```
 
 ```{r}
+#plot_function(df, hours_slept) +  scale_fill_brewer(palette = "Reds", name = "Chronotype", direction = -1)
+```
 
+```{r}
+df %>% summarize(mean(hours_slept))
+```
+
+
+```{r}
+df %>% group_by(chronotype) %>% summarize(mean(hours_slept))
+```
+
+
+```{r}
+df %>%
+  group_by(chronotype) %>% 
+  summarize(correct_pct = sum(correct)/length(time)) %>%
+  ggplot(aes(x = chronotype, y = correct_pct, fill = chronotype)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(breaks = seq(1,9, by = 1)) + 
+  scale_fill_discrete(name = "Chronotype") +
+  labs(x = "Chronotype", y = "Mean # of Correct Answers")
+```
+
+```{r}
+df %>% filter(chronotype != "Unsure") %>% 
+  ggplot(aes(x = time, y = correct, col = chronotype)) +
+  geom_point() +
+  facet_wrap(~chronotype)
+```
+
+```{r}
+df %>% filter(chronotype != "Unsure") %>% 
+  ggplot(aes(x = chronotype, y = hours_slept, col = chronotype)) + geom_jitter()
+```
+
+
+```{r}
+plot_function(df, fresh_time) + labs(x = "Fresh Time") + scale_x_discrete(limits = c("Morning", "Noon", "Midday", "Afternoon", "Evening")) + scale_fill_manual(values = c("chocolate3", "chocolate4", "chocolate", "chocolate1", "chocolate2"))
 ```
 
 
