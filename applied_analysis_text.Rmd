@@ -103,9 +103,25 @@ df$ID <- as.factor(df$ID)
 df$hour <- hour(hms(df$time))
 ```
 
+```{r}
+df <- df %>% mutate("P1" = sum(shelf) / n())
+df <- df %>% mutate("P2" = sum(den_build) / n())
+df <- df %>% mutate("P3" = sum(boards) / n())
+
+df_try <- pivot_longer(df, cols = c(P1, P2, P3))
+df_try <- pivot_longer(df, col = c(ladyspots, paris_train, city_meet, leave_time, lady_return, station_depart, ladyfinger, color_paper, name_teacher, total_carriages))
+
+```
 
 ```{r}
-df <- df %>% mutate("hour_groups" = ifelse(hours_slept < 6, 1, 0))
+df_try %>% 
+  ggplot(aes(x = name, y = value, color = uni)) +
+  geom_point()
+```
+
+
+```{r}
+df <- df %>% mutate("hour_groups" = ifelse(hours_slept < 7, 0, 1))
 
 df <- df %>% mutate("quality_groups" = ifelse(quality <= 5, 1, 0))
 
@@ -126,16 +142,16 @@ df %>% group_by(hour_groups) %>% summarize(mean(correct))
 ```{r}
 df %>% group_by(chronotype) %>% summarize(mean(hours_slept), mean(correct))
 ```
-
+```{r}
+df1 <- pivot_longer(df, cols = c(ladyspots, paris_train, city_meet, leave_time, lady_return, station_depart, ladyfinger, color_paper, name_teacher, total_carriages))
+```
 
 ```{r}
 summary(glmer(value ~ hours_slept + quality + gender + chronotype + (1 | ID), data = df1, family = "binomial"))
 ```
 
 
-```{r}
-df1 <- pivot_longer(df, cols = c(ladyspots, paris_train, city_meet, leave_time, lady_return, station_depart, ladyfinger, color_paper, name_teacher, total_carriages))
-```
+
 
 ```{r}
 model1 <- glmer(value ~ hours_slept + quality + (1 | ID), data = df1, family = "binomial")
@@ -155,7 +171,18 @@ df$hour_groups <- as.factor(df$hour_groups)
 plot_function(df, hour_groups) + 
   scale_x_discrete(labels = c("Low Sleep", "High Sleep")) + 
   labs(x = "Sleep Groups", title = "Comparison of Mean Correct Answers Between Sleep Groups") + 
-  scale_fill_discrete(name = "Sleep Groups", labels = c("<6 hours of Sleep", ">= 6 hours of Sleep"))
+  scale_fill_discrete(name = "Sleep Groups", labels = c("<7 hours of Sleep", ">= 7 hours of Sleep"))
+```
+
+```{r}
+t.test(correct ~ hour_groups, df)
+```
+
+
+```{r}
+df %>% 
+  ggplot(aes(x = hour_groups, y = correct, fill = hour_groups)) +
+  geom_boxplot()
 ```
 
 ```{r}
@@ -178,7 +205,10 @@ df %>%
   geom_bar()
 ```
 ```{r}
-df %>% group_by(uni) %>% summarize(length(ID))
+df %>% group_by(hour_groups) %>% summarize(length(ID))
+```
+```{r}
+df %>% group_by(hour_groups) %>% summarize(mean(correct))
 ```
 
 
@@ -240,9 +270,16 @@ df %>%
   geom_point() + geom_smooth()
   labs(x = "# of Correct Answers", y = "Perceived Quality of Sleep", title = "Correlation Between Perceived Sleep Quality and # of Correct Answers")
 ```
+```{r}
+df_question <- pivot_longer(df, cols = c(shelf, den_build, boards, wood, nails, den, remove, workhours, holes, cake), names_to = "question", values_to = "value")
+```
+
+
 
 ```{r}
-
+df_question %>% 
+  ggplot(aes(x = question, y = correct)) +
+  geom_abline()
 ```
 
 

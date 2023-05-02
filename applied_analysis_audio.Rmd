@@ -119,13 +119,14 @@ plot_function <- function(data, group_var) {
 ```
 
 ```{r}
-df <- df %>% mutate("hour_groups" = ifelse(hours_slept < 6, 1, 0))
+df <- df %>% mutate("hour_groups" = ifelse(hours_slept < 6, 0, 1))
 
-df <- df %>% mutate("quality_groups" = ifelse(quality <= 5, 1, 0))
+df <- df %>% mutate("quality_groups" = ifelse(quality <= 5, 0, 1))
 
 df$quality_groups <- as.factor(df$quality_groups)
 df$hour_groups <- as.factor(df$hour_groups)
 ```
+
 
 
 ```{r}
@@ -185,7 +186,7 @@ df %>%
 ```{r}
 df %>% filter(chronotype != "Unsure") %>% 
   ggplot(aes(x = hour, y = correct, col = chronotype)) +
-  geom_point() +
+  geom_jitter() +
   facet_wrap(~chronotype)
 ```
 
@@ -193,5 +194,25 @@ df %>% filter(chronotype != "Unsure") %>%
 df1 %>% 
   ggplot(aes(x = question, y = value, col = question, fill = question)) + 
   geom_bar(stat = "identity")
+```
+```{r}
+df1$value <- as.factor(df1$value)
+m1 <- glmer(value ~ hours_slept + (1 | ID), data = df1, family = "binomial")
+m2 <- glmer(value ~ quality + (1 | ID), data = df1, family = "binomial")
+m3 <- glm(value ~ quality, data = df1, family = "binomial")
+m4 <- glm(value ~ 1 + chronotype, data = df1, family = "binomial")
+summary(m4)
+
+```
+
+```{r}
+df1 %>% 
+  ggplot(aes(x = hours_slept, y = value, col = value)) +
+  geom_jitter()
+```
+```{r}
+df %>% filter(hours_slept < 10) %>% 
+  ggplot(aes(x = hours_slept, y = correct)) +
+  geom_jitter() + geom_smooth()
 ```
 
